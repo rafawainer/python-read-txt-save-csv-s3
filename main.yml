@@ -1,0 +1,76 @@
+Resources:
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: rafawainer-aws-glue-tests
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: GlueJobReadAccess
+            Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: s3:GetObject
+            Resource: arn:aws:s3:::rafawainer-aws-glue-tests/*
+          - Sid: GlueJobWriteAccess
+            Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: arn:aws:s3:::rafawainer-aws-glue-tests/*
+  GlueJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: GlueJobRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: GlueJobS3Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::rafawainer-aws-glue-tests
+                  - arn:aws:s3:::rafawainer-aws-glue-tests/*
+        - PolicyName: GlueJobAuroraPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds-db:connect
+                  - rds:DescribeDBInstances
+                Resource: "*"
+  GlueJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: GlueJob
+      Role: !GetAtt GlueJobRole.Arn
+      Command:
+        Name: glueetl
+        PythonVersion: 3
+        ScriptLocation: s3://rafawainer-aws-glue-tests/scripts/glue_job.py
+      DefaultArguments:
+        --TempDir: "s3://rafawainer-aws-glue-tests/temp"
+        --job-bookmark-option: job-bookmark-enable
+        --job-language: python
+      Connections:
+        - Name: MyAuroraConnection
+      MaxRetries: 0
+      Timeout: 2880
+      WorkerType: G.1X
+      NumberOfWorkers: 10
+      GlueVersion: 2.0
