@@ -66,6 +66,17 @@ def lambda_handler(event, context):
     s3.put_object(Bucket=dest_bucket, Key=dest_file, Body=csv_contents_binary)  
     print(f"Arquivo csv salvo com sucesso na AWS S3")
 
+    # Chama o Glue Job
+    job_name = "my-glue-job"
+    job_arguments = {
+        '--s3_bucket': dest_bucket,
+        '--s3_key': dest_folder + dest_file
+    }
+    glue.start_job_run(
+        JobName=job_name,
+        Arguments=job_arguments
+    )
+    
     # Retornar uma mensagem de sucesso
     return {
         'statusCode': 200,
