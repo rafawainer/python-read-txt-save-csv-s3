@@ -65,6 +65,11 @@ def lambda_handler(event, context):
     # Criar um novo objeto S3 para o arquivo CSV
     s3.put_object(Bucket=dest_bucket, Key=dest_file, Body=csv_contents_binary)  
     print(f"Arquivo csv salvo com sucesso na AWS S3")
+    
+    print(f"Vou deletar o arquivo txt original na AWS S3")
+    # Deletar o arquivo .txt original após salvar o arquivo .csv
+    s3.delete_object(Bucket=src_bucket, Key=src_file)
+    print(f"Arquivo txt original deletado com sucesso na AWS S3")
 
     # Chama o Glue Job
     job_name = "my-glue-job"
