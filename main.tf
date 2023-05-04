@@ -27,7 +27,7 @@ resource "aws_iam_policy" "s3_read_policy" {
           "s3:GetObject"
         ]
         Resource = [
-          "arn:aws:s3:::rafawainer-aws-glue-tests/input.txt"
+          "arn:aws:s3:::rafaw-aws-glue-tests/input.txt"
         ]
       }
     ]
@@ -46,7 +46,7 @@ resource "aws_iam_policy" "s3_write_policy" {
           "s3:PutObject"
         ]
         Resource = [
-          "arn:aws:s3:::rafawainer-aws-glue-tests/input-processed/*"
+          "arn:aws:s3:::rafaw-aws-glue-tests/input-processed/*"
         ]
       }
     ]
