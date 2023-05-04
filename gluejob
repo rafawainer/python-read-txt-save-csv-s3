@@ -1,0 +1,58 @@
+import sys
+import boto3
+import pandas as pd
+import pymysql
+
+# Configuração do endpoint do cluster Aurora MySQL
+host = "<host>"
+port = <port>
+database = "<database>"
+username = "<username>"
+password = "<password>"
+
+# Configuração do S3
+s3 = boto3.resource('s3')
+bucket_name = "<bucket_name>"
+file_name = "<file_name>"
+
+# Carrega o arquivo .csv do S3 para um DataFrame
+s3_object = s3.Object(bucket_name, file_name)
+s3_data = s3_object.get()['Body'].read().decode('utf-8')
+df = pd.read_csv(pd.compat.StringIO(s3_data))
+
+# Converte o DataFrame para um array de tuplas
+records = [tuple(x) for x in df.to_numpy()]
+
+# Conecta ao cluster Aurora MySQL
+conn = pymysql.connect(host=host, port=port, user=username, passwd=password, db=database)
+
+# Insere ou atualiza os dados na tabela "offloadboleto"
+try:
+    with conn.cursor() as cursor:
+        for record in records:
+            chpras = record[0]
+            cod_barras = record[1]
+            valor = record[2]
+            
+            # Verifica se o chpras já existe na tabela
+            sql_select = f"SELECT chpras FROM offloadboleto WHERE chpras = '{chpras}'"
+            cursor.execute(sql_select)
+            result = cursor.fetchone()
+            
+            if result is None:
+                # O chpras não existe na tabela, insere um novo registro
+                sql_insert = "INSERT INTO offloadboleto (chpras, cod_barras, valor) VALUES (%s, %s, %s)"
+                cursor.execute(sql_insert, (chpras, cod_barras, valor))
+            else:
+                # O chpras já existe na tabela, atualiza o registro
+                sql_update = "UPDATE offloadboleto SET cod_barras = %s, valor = %s WHERE chpras = %s"
+                cursor.execute(sql_update, (cod_barras, valor, chpras))
+                
+        conn.commit()
+except Exception as e:
+    print(f"Erro ao inserir ou atualizar os dados na tabela: {e}")
+    conn.rollback()
+finally:
+    conn.close()
+
+print("Dados inseridos ou atualizados com sucesso na tabela offloadboleto.")
